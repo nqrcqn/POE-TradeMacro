@@ -1270,6 +1270,8 @@ TradeFunc_Main(openSearchInBrowser = false, isAdvancedPriceCheck = false, isAdva
 			RequestParams.xbase := Item.BaseName
 			Item.UsedInSearch.type := Item.BaseName
 		}
+		
+		Item.priceHistoryChaosValue := TradeFunc_FindMapHistoryData(Item.SubType, Item.MapTier)
 	}
 
 	/*
@@ -1557,6 +1559,14 @@ TradeFunc_Main(openSearchInBrowser = false, isAdvancedPriceCheck = false, isAdva
 	}
 
 	TradeGlobals.Set("AdvancedPriceCheckItem", {})
+}
+
+TradeFunc_FindMapHistoryData(baseType, tier) {
+	For key, value in MapHistoryData {
+		If (baseType = value.baseType and tier = value.mapTier) {
+			Return value.chaosValue
+		}
+	}
 }
 
 TradeFunc_GetPoENinjaItemUrl(league, item) {	
@@ -3047,6 +3057,11 @@ TradeFunc_ParseHtml(html, payload, iLvl = "", ench = "", isItemAgeRequest = fals
 	} Else {
 		Title .= "`n"
 	}
+
+	; add poe.ninja chaos equivalents
+	If (Item.IsMap) {
+		Title .= "poe.ninja price history: " Round(Item.priceHistoryChaosValue, 2) " chaos.`n`n"
+	}	
 
 	NoOfItemsToShow := TradeOpts.ShowItemResults
 	; add table headers to tooltip
@@ -5719,8 +5734,11 @@ ReadPoeNinjaCurrencyData:
 	url			:= "https://poe.ninja/api/Data/GetCurrencyOverview?league=" . league
 	parsedJSON	:= CurrencyDataDownloadURLtoJSON(url, sampleValue, false, isFallback, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, loggedCurrencyRequestAtStartup, loggedTempLeagueCurrencyRequest, TradeOpts.CurlTimeout)
 
+	mapUrl		:= "https://poe.ninja/api/Data/GetMapOverview?league="  . league
+	parsedMapJSON	:= PoENinjaPriceDataDownloadURLtoJSON(mapUrl, "map", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+
 	; fallback to Standard and Hardcore league if used league seems to not be available
-	If (!parsedJSON.currencyDetails.length()) {
+	If (not parsedJSON.currencyDetails.length() or not parsedMapJSON.lines.length()) {
 		isFallback	:= true
 		If (InStr(league, "Hardcore", 0) or RegExMatch(league, "HC")) {
 			league	:= "Hardcore"
@@ -5729,11 +5747,18 @@ ReadPoeNinjaCurrencyData:
 			league	:= "Standard"
 			fallback	:= "Standard"
 		}
-
-		url			:= "https://poe.ninja/api/Data/GetCurrencyOverview?league=" . league
-		parsedJSON	:= CurrencyDataDownloadURLtoJSON(url, sampleValue, true, isFallback, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, loggedCurrencyRequestAtStartup, loggedTempLeagueCurrencyRequest, TradeOpts.CurlTimeout)
+		
+		If (not parsedJSON.currencyDetails.length()) {
+			url			:= "https://poe.ninja/api/Data/GetCurrencyOverview?league=" . league
+			parsedJSON	:= CurrencyDataDownloadURLtoJSON(url, sampleValue, true, isFallback, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, loggedCurrencyRequestAtStartup, loggedTempLeagueCurrencyRequest, TradeOpts.CurlTimeout)	
+		}
+		If (not parsedMapJSON.lines.length()) {
+			mapUrl		:= "https://poe.ninja/api/Data/GetMapOverview?league="  . league
+			parsedMapJSON	:= PoENinjaPriceDataDownloadURLtoJSON(mapUrl, "map", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+		}		
 	}
 	global CurrencyHistoryData := parsedJSON.lines
+	global MapHistoryData := parsedMapJSON.lines
 	TradeGlobals.Set("LastAltCurrencyUpdate", A_NowUTC)
 	
 	global ChaosEquivalents	:= {}
@@ -5742,7 +5767,7 @@ ReadPoeNinjaCurrencyData:
 		ChaosEquivalents[currencyBaseName] := val.chaosEquivalent
 	}
 	ChaosEquivalents["Chaos Orb"] := 1
-	
+
 	If (TempChangingLeagueInProgress) {
 		msg := "Changing league to " . TradeOpts.SearchLeague " (" . TradeGlobals.Get("LeagueName") . ") finished."
 		msg .= "`n- Requested chaos equivalents and currency history from poe.ninja."
