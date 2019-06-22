@@ -1271,7 +1271,14 @@ TradeFunc_Main(openSearchInBrowser = false, isAdvancedPriceCheck = false, isAdva
 			Item.UsedInSearch.type := Item.BaseName
 		}
 		
-		Item.priceHistoryChaosValue := TradeFunc_FindMapHistoryData(Item.SubType, Item.MapTier)
+		Item.priceHistory := TradeFunc_FindMapHistoryData(Item.SubType, Item.MapTier)
+	}
+	
+	/*
+		fossils
+		*/
+	If (Item.IsFossil) {
+		Item.priceHistory := TradeFunc_FindFossilHistoryData(Item.Name)
 	}
 
 	/*
@@ -1448,6 +1455,7 @@ TradeFunc_Main(openSearchInBrowser = false, isAdvancedPriceCheck = false, isAdva
 	ParsingError	:= ""
 	currencyUrl	:= ""	
 	If (Item.IsCurrency and not Item.IsEssence and TradeFunc_CurrencyFoundOnCurrencySearch(Item.Name)) {
+		Item.priceHistory := TradeFunc_FindCurrencyHistoryData(Item.Name)
 		If (!TradeOpts.AlternativeCurrencySearch or Item.IsFossil) {			
 			Html := TradeFunc_DoCurrencyRequest(Item.Name, openSearchInBrowser, 0, currencyUrl, error)
 			If (error) {
@@ -1564,7 +1572,29 @@ TradeFunc_Main(openSearchInBrowser = false, isAdvancedPriceCheck = false, isAdva
 TradeFunc_FindMapHistoryData(baseType, tier) {
 	For key, value in MapHistoryData {
 		If (baseType = value.baseType and tier = value.mapTier) {
-			Return value.chaosValue
+			Return {"totalChange" : value.sparkline.totalChange, "chaosValue" : value.chaosValue, "exaltedValue" : value.exaltedValue}
+		}
+	}
+}
+TradeFunc_FindFossilHistoryData(name) {
+	For key, value in FossilHistoryData {
+		If (name = value.name) {
+			Return {"totalChange" : value.sparkline.totalChange, "chaosValue" : value.chaosValue, "exaltedValue" : value.exaltedValue}
+		}
+	}
+}
+TradeFunc_FindCurrencyHistoryData(name) {
+	For key, value in CurrencyHistoryData {
+		If (name = value.currencyTypeName) {			
+			obj := {}
+			If (value.receiveSparkLine.data.length) {
+				obj.totalChange := value.receiveSparkLine.totalChange
+			} Else {
+				obj.totalChange := value.lowConfidenceReceiveSparkLine.totalChange
+			}			
+			obj.chaosValue := value.chaosEquivalent
+			
+			Return obj
 		}
 	}
 }
@@ -2498,6 +2528,16 @@ TradeFunc_ParseCurrencyHtml(html, payload, ParsingError = "") {
 	Title .= "`n------------------------------ `n"
 	NoOfItemsToShow := TradeOpts.ShowItemResults
 
+	totalChangeSign := (Item.priceHistory.totalChange > 0) ? "+" : ""
+	If (Item.IsFossil or Item.IsCurrency) {
+		If (Item.priceHistory.exaltedValue >= 1) {
+			Title .= "poe.ninja price history: " Round(Item.priceHistory.exaltedValue, 2) " exalted."	
+		} Else {
+			Title .= "poe.ninja price history: " Round(Item.priceHistory.chaosValue, 2) " chaos."	
+		}
+		Title .= " Change: " totalChangeSign "" Round(Item.priceHistory.totalChange, 0) "% (last 7 days).`n`n"
+	}
+
 	Title .= StrPad("IGN" ,10)
 	Title .= StrPad("| Ratio",20)
 	Title .= "| " . StrPad("Buy  ",20, "Left")
@@ -2842,7 +2882,6 @@ TradeFunc_ParseHtmlToObj(html, payload, iLvl = "", ench = "", isItemAgeRequest =
 	NoOfItemsToShow := TradeOpts.ShowItemResults
 	results := []
 	accounts := {}
-	
 	While A_Index < NoOfItemsToShow {
 		result := {}
 		
@@ -3059,9 +3098,19 @@ TradeFunc_ParseHtml(html, payload, iLvl = "", ench = "", isItemAgeRequest = fals
 	}
 
 	; add poe.ninja chaos equivalents
+	totalChangeSign := (Item.priceHistory.totalChange > 0) ? "+" : ""	
 	If (Item.IsMap) {
-		Title .= "poe.ninja price history: " Round(Item.priceHistoryChaosValue, 2) " chaos.`n`n"
-	}	
+		Title .= "poe.ninja price history: " Round(Item.priceHistory.chaosValue, 2) " chaos."		
+		Title .= " Change: " totalChangeSign "" Round(Item.priceHistory.totalChange, 0) "% (last 7 days).`n`n"
+	} 
+	Else If (Item.IsFossil) {
+		If (Item.priceHistory.exaltedValue >= 1) {
+			Title .= "poe.ninja price history: " Round(Item.priceHistory.exaltedValue, 2) " exalted."
+		} Else {
+			Title .= "poe.ninja price history: " Round(Item.priceHistory.chaosValue, 2) " chaos."	
+		}		
+		Title .= " Change: " totalChangeSign "" Round(Item.priceHistory.totalChange, 0) "% (last 7 days).`n`n"
+	}
 
 	NoOfItemsToShow := TradeOpts.ShowItemResults
 	; add table headers to tooltip
@@ -5736,6 +5785,20 @@ ReadPoeNinjaCurrencyData:
 
 	mapUrl		:= "https://poe.ninja/api/Data/GetMapOverview?league="  . league
 	parsedMapJSON	:= PoENinjaPriceDataDownloadURLtoJSON(mapUrl, "map", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+	
+	fossilUrl		:= "https://poe.ninja/api/data/itemoverview?=" . league . "&type=Fossil"
+	parsedFossilJSON	:= PoENinjaPriceDataDownloadURLtoJSON(fossilUrl, "fossil", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+	
+	/*
+	scarabUrl		:= "https://poe.ninja/api/data/itemoverview?=" . league . "&type=Scarab"
+	parsedScarabJSON	:= PoENinjaPriceDataDownloadURLtoJSON(scarabUrl, "scarab", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+	
+	essenceUrl		:= "https://poe.ninja/api/data/itemoverview?=" . league . "&type=Essence"
+	parsedEssenceJSON	:= PoENinjaPriceDataDownloadURLtoJSON(essenceUrl, "essence", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+	
+	fragmentUrl		:= "https://poe.ninja/api/data/itemoverview?=" . league . "&type=Fragment"
+	parsedFragmentJSON	:= PoENinjaPriceDataDownloadURLtoJSON(fragmentUrl, "fragment", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+	*/
 
 	; fallback to Standard and Hardcore league if used league seems to not be available
 	If (not parsedJSON.currencyDetails.length() or not parsedMapJSON.lines.length()) {
@@ -5755,10 +5818,15 @@ ReadPoeNinjaCurrencyData:
 		If (not parsedMapJSON.lines.length()) {
 			mapUrl		:= "https://poe.ninja/api/Data/GetMapOverview?league="  . league
 			parsedMapJSON	:= PoENinjaPriceDataDownloadURLtoJSON(mapUrl, "map", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
-		}		
+		}
+		If (not parsedFossilJSON.lines.length()) {
+			fossilUrl		:= "https://poe.ninja/api/data/itemoverview?=" . league . "&type=Fossil"
+			parsedFossilJSON	:= PoENinjaPriceDataDownloadURLtoJSON(fossilUrl, "fossil", true, false, league, "PoE-TradeMacro", file, fallBackDir, usedFallback, TradeOpts.CurlTimeout)
+		}
 	}
 	global CurrencyHistoryData := parsedJSON.lines
 	global MapHistoryData := parsedMapJSON.lines
+	global FossilHistoryData := parsedFossilJSON.lines
 	TradeGlobals.Set("LastAltCurrencyUpdate", A_NowUTC)
 	
 	global ChaosEquivalents	:= {}
