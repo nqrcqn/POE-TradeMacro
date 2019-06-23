@@ -12043,11 +12043,11 @@ FetchCurrencyData:
 	loggedTempLeagueCurrencyRequest := loggedTempLeagueCurrencyRequest ? loggedTempLeagueCurrencyRequest : false
 	
 	Loop, % currencyLeagues.Length() {
-		currencyLeague := currencyLeagues[A_Index]
-		url  := "https://poe.ninja/api/Data/GetCurrencyOverview?league=" . currencyLeague
+		currencyLeague := currencyLeagues[A_Index]		
+		url	:= "https://poe.ninja/api/data/itemoverview?=" . currencyLeague . "&type=Currency"
 		file := A_ScriptDir . "\temp\currencyData_" . currencyLeague . ".json"
 
-		url		:= "https://poe.ninja/api/Data/GetCurrencyOverview?league=" . currencyLeague
+		url	:= "https://poe.ninja/api/data/itemoverview?=" . currencyLeague . "&type=Currency"
 		critical	:= StrLen(Globals.Get("LastCurrencyUpdate")) ? false : true
 		parsedJSON := CurrencyDataDownloadURLtoJSON(url, sampleValue, critical, false, currencyLeague, "PoE-ItemInfo", file, A_ScriptDir "\data", usedFallback, loggedCurrencyRequestAtStartup, loggedTempLeagueCurrencyRequest)		
 
