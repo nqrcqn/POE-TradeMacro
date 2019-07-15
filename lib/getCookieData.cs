@@ -15,7 +15,7 @@ class CloudflareCookie
     [STAThread]
     static void Main(string[] args)
     {
-        var miniBrowser = new BrowserWindow(new Uri("http://poe.trade"));
+        var miniBrowser = new BrowserWindow(new Uri("https://poe.trade"));
 
         Application.Run(miniBrowser);
 

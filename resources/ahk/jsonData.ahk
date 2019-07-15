@@ -46,7 +46,7 @@ reqHeaders.push("Cache-Control: max-age=0")
 reqHeaders.push("Content-type: application/x-www-form-urlencoded; charset=UTF-8")
 reqHeaders.push("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
 reqHeaders.push("User-Agent: Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.90 Safari/537.36")
-parsedLeagueJSON := PoEScripts_Download("http://api.pathofexile.com/leagues?type=main", postData, reqHeaders, options, true, true, false, "", reqHeadersCurl)
+parsedLeagueJSON := PoEScripts_Download("https://api.pathofexile.com/leagues?type=main", postData, reqHeaders, options, true, true, false, "", reqHeadersCurl)
 WriteToLogFile("Requesting leagues from api.pathofexile.com...`n`n" "cURL command:`n" reqHeadersCurl "`n`nAnswer: " reqHeaders, "StartupLog.txt", "PoE-TradeMacro")
 
 If (PoEScripts_SaveWriteTextFile(A_ScriptDir "\temp\currentLeagues.json", parsedLeagueJSON, "utf-8", true, true)) {

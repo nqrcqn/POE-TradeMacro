@@ -158,9 +158,9 @@ TradeFunc_OpenWikiHotkey(priceCheckTest = false, itemData = "") {
 	If (!Item.Name and TradeOpts.OpenUrlsOnEmptyItem) {
 		If (TradeOpts.WikiAlternative) {
 			;http://poedb.tw/us/item.php?n=The+Doctor
-			TradeFunc_OpenUrlInBrowser("http://poedb.tw/us/")
+			TradeFunc_OpenUrlInBrowser("https://poedb.tw/us/")
 		} Else {
-			TradeFunc_OpenUrlInBrowser("http://pathofexile.gamepedia.com/")	
+			TradeFunc_OpenUrlInBrowser("https://pathofexile.gamepedia.com/")	
 		}	
 	}
 	Else {
@@ -205,10 +205,10 @@ TradeFunc_OpenWikiHotkey(priceCheckTest = false, itemData = "") {
 		If (StrLen(UrlAffix) > 0) {
 			If (TradeOpts.WikiAlternative) {
 				UrlAffix := StrReplace(UrlAffix," ","+")
-				WikiUrl := "http://poedb.tw/us/" UrlPage . UrlAffix
+				WikiUrl := "https://poedb.tw/us/" UrlPage . UrlAffix
 			} Else {				
 				UrlAffix := StrReplace(UrlAffix," ","_")
-				WikiUrl := "http://pathofexile.gamepedia.com/" UrlPage . UrlAffix
+				WikiUrl := "https://pathofexile.gamepedia.com/" UrlPage . UrlAffix
 			}
 			TradeFunc_OpenUrlInBrowser(WikiUrl)
 		}
@@ -1482,7 +1482,7 @@ TradeFunc_Main(openSearchInBrowser = false, isAdvancedPriceCheck = false, isAdva
 			}
 			Else {
 				; using GET request instead of preventing the POST request redirect and parsing the url
-				parsedUrl1 := "http://poe.trade/search?" Payload
+				parsedUrl1 := "https://poe.trade/search?" Payload
 				; redirect was prevented to get the url and open the search on poe.trade instead
 				;RegExMatch(Html, "i)href=""(https?:\/\/.*?)""", ParsedUrl)
 			}
@@ -2092,7 +2092,7 @@ TradeFunc_DoPostRequest(payload, openSearchInBrowser = false) {
 
 	postData 	:= payload
 	payLength	:= StrLen(postData)
-	url 		:= "http://poe.trade/search"
+	url 		:= "https://poe.trade/search"
 	options	:= ""
 	options	.= "`n" "ReturnHeaders: append"
 	options	.= "`n" "TimeOut: " TradeOpts.CurlTimeout
@@ -2100,11 +2100,11 @@ TradeFunc_DoPostRequest(payload, openSearchInBrowser = false) {
 	reqHeaders	:= []
 	reqHeaders.push("Connection: keep-alive")
 	reqHeaders.push("Cache-Control: max-age=0")
-	reqHeaders.push("Origin: http://poe.trade")
+	reqHeaders.push("Origin: https://poe.trade")
 	reqHeaders.push("Upgrade-Insecure-Requests: 1")
 	reqHeaders.push("Content-type: application/x-www-form-urlencoded; charset=UTF-8")
 	reqHeaders.push("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	reqHeaders.push("Referer: http://poe.trade/")	
+	reqHeaders.push("Referer: https://poe.trade/")	
 	
 	If (StrLen(UserAgent)) {
 		reqHeaders.push("User-Agent: " UserAgent)
@@ -2326,7 +2326,7 @@ TradeFunc_DoCurrencyRequest(currencyName = "", openSearchInBrowser = false, init
 	cfClearance := TradeGlobals.Get("cfClearance")
 
 	If (init) {
-		Url := "http://currency.poe.trade/"
+		Url := "https://currency.poe.trade/"
 		SplashUI.SetSubMessage("Looking up poe.trade currency IDs...")
 	}
 	Else {
@@ -2346,7 +2346,7 @@ TradeFunc_DoCurrencyRequest(currencyName = "", openSearchInBrowser = false, init
 		minStockSize := 0
 
 		If (idWant and idHave) {
-			Url := "http://currency.poe.trade/search?league=" . TradeUtils.UriEncode(LeagueName) . "&online=x&want=" . idWant . "&have=" . idHave . "&stock=" . minStockSize
+			Url := "https://currency.poe.trade/search?league=" . TradeUtils.UriEncode(LeagueName) . "&online=x&want=" . idWant . "&have=" . idHave . "&stock=" . minStockSize
 			currencyURL := Url
 		} Else {
 			errorMsg = Couldn't find currency "%currencyname%" on poe.trade's currency search.`n`nThis search needs to know the currency names used on poe.trades currency page.`n`nEither this item doesn't exist on that page or parsing and mapping the poe.trade`nnames to the actual names failed. Please report this issue.
@@ -2374,7 +2374,7 @@ TradeFunc_DoCurrencyRequest(currencyName = "", openSearchInBrowser = false, init
 	reqHeaders.push("Accept-Encoding:gzip, deflate")
 	reqHeaders.push("Accept-Language:de-DE,de;q=0.8,en-US;q=0.6,en;q=0.4")
 	reqHeaders.push("Connection:keep-alive")
-	reqHeaders.push("Referer:http://poe.trade/")
+	reqHeaders.push("Referer:https://poe.trade/")
 	reqHeaders.push("Upgrade-Insecure-Requests:1")
 
 	html := PoEScripts_Download(url, postData, reqHeaders, options, false)
@@ -5773,7 +5773,7 @@ Return
 
 OpenPageInInternetExplorer:
 	RegRead, iexplore, HKLM, SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\iexplore.exe
-	Run, %iexplore% http://poe.trade
+	Run, %iexplore% https://poe.trade
 Return
 
 ReloadScriptAtCookieError:
@@ -5913,7 +5913,7 @@ TradeFunc_HandleCustomSearchSubmit(openInBrowser = false) {
 			ShowToolTip("")
 			Html := TradeFunc_DoPostRequest(Payload, true)
 			RegExMatch(Html, "i)href=""\/(search\/.*?)\/live", ParsedUrl)
-			TradeFunc_OpenUrlInBrowser("http://poe.trade/" ParsedUrl1)
+			TradeFunc_OpenUrlInBrowser("https://poe.trade/" ParsedUrl1)
 		}
 		Else {
 			ShowToolTip("Requesting search results... ")
